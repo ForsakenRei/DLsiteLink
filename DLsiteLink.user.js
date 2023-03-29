@@ -6,6 +6,7 @@
 // @version     2.1.1a
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
+// @icon        https://www.dlsite.com/favicon.ico
 // @updateURL   https://github.com/ForsakenRei/DLsiteLink/raw/main/DLsiteLink.user.js
 // @downloadURL https://github.com/ForsakenRei/DLsiteLink/raw/main/DLsiteLink.user.js
 // @run-at      document-start
