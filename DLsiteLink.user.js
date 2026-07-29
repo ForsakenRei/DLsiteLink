@@ -40,7 +40,7 @@
         margin: 3px 15px 3px 3px;
     }
 
-    .voice-title {
+    .voicepopup .voice-title {
         font-size: 1.4em;
         font-weight: bold;
         text-align: center;
@@ -48,20 +48,20 @@
         display: block;
     }
 
-    .rjcode {
+    .voicepopup .rjcode {
         text-align: center;
         font-size: 1.2em;
         font-style: italic;
         opacity: 0.8;
     }
 
-    .error {
+    .voicepopup .error {
         height: 210px;
         line-height: 210px;
         text-align: center;
     }
 
-    .discord-dark {
+    .voicepopup.discord-dark {
         background-color: #36393f;
         color: #dcddde;
         font-size: 0.9375rem;
