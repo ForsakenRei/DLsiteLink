@@ -3,7 +3,7 @@
 // @namespace   original:Sanya, modified by yukiflandre
 // @description Makes RJ/BJ/VJ codes more useful.
 // @include     *://*/*
-// @version     2.1.1a
+// @version     2.1.2a
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlhttpRequest
 // @icon        https://www.dlsite.com/favicon.ico
@@ -40,7 +40,7 @@
         margin: 3px 15px 3px 3px;
     }
 
-    .voice-title {
+    .voicepopup .voice-title {
         font-size: 1.4em;
         font-weight: bold;
         text-align: center;
@@ -48,20 +48,20 @@
         display: block;
     }
 
-    .rjcode {
+    .voicepopup .rjcode {
         text-align: center;
         font-size: 1.2em;
         font-style: italic;
         opacity: 0.8;
     }
 
-    .error {
+    .voicepopup .error {
         height: 210px;
         line-height: 210px;
         text-align: center;
     }
 
-    .discord-dark {
+    .voicepopup.discord-dark {
         background-color: #36393f;
         color: #dcddde;
         font-size: 0.9375rem;
@@ -112,18 +112,23 @@
         NodeFilter.SHOW_TEXT,
         {
           acceptNode: function (node) {
-            if (node.parentElement.classList.contains(VOICELINK_CLASS))
+            if (node.parentElement.classList.contains(VOICELINK_CLASS)) {
               return NodeFilter.FILTER_ACCEPT;
-            if (node.nodeValue.match(RJ_REGEX)) return NodeFilter.FILTER_ACCEPT;
+            }
+            if (node.nodeValue.match(RJ_REGEX)) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
           },
         },
-        false
+        false,
       );
       while (rjNodeTreeWalker.nextNode()) {
         const node = rjNodeTreeWalker.currentNode;
-        if (node.parentElement.classList.contains(VOICELINK_CLASS))
+        if (node.parentElement.classList.contains(VOICELINK_CLASS)) {
           Parser.rebindEvents(node.parentElement);
-        else Parser.linkify(node);
+        } else {
+          Parser.linkify(node);
+        }
       }
     },
 
@@ -166,7 +171,7 @@
 
         textNode.parentNode.insertBefore(
           rjLinkNode,
-          prevNode ? prevNode.nextSibling : textNode.nextSibling
+          prevNode ? prevNode.nextSibling : textNode.nextSibling,
         );
 
         // Insert text after if there is any
@@ -181,13 +186,13 @@
         if (
           (substring = nodeOriginalText.substring(
             matches[i].index + num,
-            upper
+            upper,
           ))
         ) {
           const subtextNode = document.createTextNode(substring);
           textNode.parentNode.insertBefore(
             subtextNode,
-            rjLinkNode.nextElementSibling
+            rjLinkNode.nextElementSibling,
           );
           prevNode = subtextNode;
         } else {
@@ -221,9 +226,9 @@
       popup.style = "display: flex";
       document.body.appendChild(popup);
       DLsite.request(rjCode, function (workInfo) {
-        if (workInfo === null)
+        if (workInfo === null) {
           popup.innerHTML = "<div class='error'>Work not found.</span>";
-        else {
+        } else {
           const imgContainer = document.createElement("div");
           const img = document.createElement("img");
           img.src = workInfo.img;
@@ -237,16 +242,21 @@
                         Circle: <a>${workInfo.circle}</a>
                         <br />
                 `;
-          if (workInfo.date) html += `Release: <a>${workInfo.date}</a> <br />`;
-          else if (workInfo.dateAnnounce)
+          if (workInfo.date) {
+            html += `Release: <a>${workInfo.date}</a> <br />`;
+          } else if (workInfo.dateAnnounce) {
             html += `Scheduled Release: <a>${workInfo.dateAnnounce}</a> <br />`;
+          }
 
-          if (workInfo.update)
+          if (workInfo.update) {
             html += `Update: <a>${workInfo.update}</a> <br />`;
+          }
 
           html += `Age rating: <a>${workInfo.rating}</a><br />`;
 
-          if (workInfo.cv) html += `CV: <a>${workInfo.cv}</a> <br />`;
+          if (workInfo.cv) {
+            html += `CV: <a>${workInfo.cv}</a> <br />`;
+          }
 
           html += `Tags: <a>`;
           workInfo.tags.forEach((tag) => {
@@ -258,8 +268,13 @@
 
           html += "</a><br />";
 
-          if (workInfo.filesize)
+          if (workInfo.filesize) {
             html += `File size: ${workInfo.filesize}<br />`;
+          }
+
+          if (workInfo.dlCount) {
+            html += `DL count: ${workInfo.dlCount}<br />`;
+          }
 
           html += "</div>";
           popup.innerHTML = html;
@@ -323,6 +338,7 @@
       //     cv: any;
       //     filesize: any;
       //     dateAnnounce: any;
+      //     dlCount: any;
       // }
 
       const workInfo = {};
@@ -364,9 +380,13 @@
             // const dom = new DOMParser().parseFromString(resp.responseText, "text/html");
             let json = JSON.parse(resp.responseText);
             const workInfo = DLsite.parseWorkData(json, rjCode);
-            callback(workInfo);
-          } else if (resp.readyState === 4 && resp.status === 404)
+            DLsite.requestDlCount(rjCode, function (dlCount) {
+              workInfo.dlCount = dlCount;
+              callback(workInfo);
+            });
+          } else if (resp.readyState === 4 && resp.status === 404) {
             DLsite.requestAnnounce(rjCode, callback);
+          }
         },
       });
     },
@@ -383,9 +403,40 @@
           if (resp.readyState === 4 && resp.status === 200) {
             let json = JSON.parse(resp.responseText);
             const workInfo = DLsite.parseWorkData(json, rjCode);
-            callback(workInfo);
-          } else if (resp.readyState === 4 && resp.status === 404)
+            DLsite.requestDlCount(rjCode, function (dlCount) {
+              workInfo.dlCount = dlCount;
+              callback(workInfo);
+            });
+          } else if (resp.readyState === 4 && resp.status === 404) {
             callback(null);
+          }
+        },
+      });
+    },
+    requestDlCount: function (rjCode, callback) {
+      const url = `https://www.dlsite.com/maniax/product/info/ajax?product_id=${rjCode}`;
+      getXmlHttpRequest()({
+        method: "GET",
+        url,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:67.0)",
+        },
+        onload: function (resp) {
+          if (resp.readyState === 4 && resp.status === 200) {
+            try {
+              const json = JSON.parse(resp.responseText);
+              const info = json[rjCode] || json[rjCode.toUpperCase()] || json;
+              callback(info ? info.dl_count : null);
+            } catch (e) {
+              callback(null);
+            }
+          } else {
+            callback(null);
+          }
+        },
+        onerror: function () {
+          callback(null);
         },
       });
     },
